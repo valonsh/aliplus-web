@@ -9,11 +9,10 @@ import { site } from "@/lib/content";
 //   SMTP_PORT     default 465 (TLS)
 //   SMTP_USER     mailbox login (for Gmail: the address)
 //   SMTP_PASS     password (for Gmail: an App Password, not the account password)
-//   CONTACT_TO    where messages are delivered (default: the site email)
+//   CONTACT_TO    where messages are delivered (default: the test inbox)
 //   CONTACT_FROM  sender shown in the mailbox (default: SMTP_USER)
 //
-// Without SMTP_USER/SMTP_PASS in development the message is logged instead of
-// sent, so the form can be exercised locally. In production it is an error.
+// Missing SMTP credentials return an error in every environment.
 
 export const runtime = "nodejs";
 
@@ -43,6 +42,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
   }
 
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
+  }
+
   // Bots fill the hidden field; pretend success and drop it.
   if (clean(body.company, 200)) return NextResponse.json({ ok: true, delivered: false });
 
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
   const user = process.env.SMTP_USER;
   // Google shows App Passwords in groups of four; the spaces are not part of it.
   const pass = process.env.SMTP_PASS?.replace(/\s+/g, "");
-  const to = process.env.CONTACT_TO || site.email;
+  const to = process.env.CONTACT_TO?.trim() || "valonsh101@gmail.com";
   const from = process.env.CONTACT_FROM || user;
 
   const text = [
@@ -78,10 +81,6 @@ export async function POST(request: NextRequest) {
   ].join("\n");
 
   if (!user || !pass) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn(`[contact] SMTP not configured — message not sent. Would deliver to ${to}:\n${text}`);
-      return NextResponse.json({ ok: true, delivered: false });
-    }
     console.error("[contact] SMTP_USER / SMTP_PASS are not set.");
     return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
   }
@@ -92,6 +91,9 @@ export async function POST(request: NextRequest) {
     port,
     secure: port === 465,
     auth: { user, pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
   });
 
   try {
@@ -103,8 +105,8 @@ export async function POST(request: NextRequest) {
       text,
     });
     return NextResponse.json({ ok: true, delivered: true });
-  } catch (err) {
-    console.error("[contact] send failed:", err);
+  } catch {
+    console.error("[contact] SMTP delivery failed.");
     return NextResponse.json({ ok: false, error: "send_failed" }, { status: 502 });
   }
 }
