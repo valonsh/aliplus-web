@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { useT } from "@/i18n/LocaleProvider";
+import { useLocale, useT } from "@/i18n/LocaleProvider";
 
 const topicValues = ["general", "ration", "product", "visit", "usage"] as const;
 
@@ -155,6 +155,10 @@ function ContactSelect({
 }
 
 export function ContactForm() {
+  const locale = useLocale();
+  const submitting = useRef(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(false);
   const t = useT().contact.form;
   const [fields, setFields] = useState<Fields>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof Fields, string>>>({});
@@ -170,18 +174,39 @@ export function ContactForm() {
     });
   }
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (submitting.current) return;
+    setSendError(false);
     const next: Partial<Record<keyof Fields, string>> = {};
     for (const key of required) {
       if (!fields[key].trim()) next[key] = t.required;
     }
-    if (fields.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
+    if (fields.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email.trim())) {
       next.email = t.invalidEmail;
     }
     setErrors(next);
     if (Object.keys(next).length) return;
-    setSent(true);
+    submitting.current = true;
+    setSending(true);
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...fields, email: fields.email.trim(), locale }),
+        signal: AbortSignal.timeout(45000),
+      });
+      const result = await response.json();
+      if (!response.ok || result?.ok !== true || result?.delivered !== true) {
+        throw new Error("Message not delivered");
+      }
+      setSent(true);
+    } catch {
+      setSendError(true);
+    } finally {
+      submitting.current = false;
+      setSending(false);
+    }
   }
 
   if (sent) {
@@ -194,7 +219,7 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="sheet-form" noValidate>
+    <form onSubmit={onSubmit} className="sheet-form" aria-busy={sending} noValidate>
       <h2 className="sheet-form__title">{t.title}</h2>
 
       <ContactSelect
@@ -273,8 +298,9 @@ export function ContactForm() {
         )}
       </Field>
 
-      <button className="ghost-line-btn" type="submit">
-        {t.submit}
+      {sendError ? <p className="sheet-error" role="alert">{t.sendError}</p> : null}
+      <button className="ghost-line-btn" type="submit" disabled={sending}>
+        {sending ? t.sending : t.submit}
       </button>
     </form>
   );
