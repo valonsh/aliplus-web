@@ -96,7 +96,7 @@ export const en = {
 
   home: {
     hero: {
-      title: "Aliplus\nFeed Additive",
+      title: "Aliplus\nAnimal feed",
       tagline: "More from every ration.",
       body: "Feed is your biggest cost — it does not have to be your biggest waste. Mix Aliplus with cereals you already grow to raise protein and energy, support the rumen, and turn every bite into measurable performance.",
       cta: "Usage Guide",

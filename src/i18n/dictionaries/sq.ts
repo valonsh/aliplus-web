@@ -96,7 +96,7 @@ export const sq: Dictionary = {
 
   home: {
     hero: {
-      title: "Aliplus\nAditiv ushqimor",
+      title: "Aliplus\nUshqim për kafshë",
       tagline: "Më shumë nga çdo racion.",
       body: "Ushqimi është kostoja juaj më e madhe — nuk duhet të jetë edhe humbja juaj më e madhe. Përzieni Aliplus me drithërat që tashmë i kultivoni për të rritur proteinën dhe energjinë, për të mbështetur rumenin dhe për ta kthyer çdo kafshatë në rezultat të matshëm.",
       cta: "Udhëzuesi i përdorimit",
