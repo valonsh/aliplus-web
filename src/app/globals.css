@@ -2,7 +2,7 @@
 
 /* Aeonik (CoType Foundry, licensed). Drop the web files into public/fonts:
    Aeonik-Light.woff2, Aeonik-Regular.woff2, Aeonik-Medium.woff2. */
-@font-face {
+/* @font-face {
   font-family: "Aeonik";
   src:
     local("Aeonik Light"),
@@ -34,7 +34,7 @@
   font-weight: 500 700;
   font-style: normal;
   font-display: swap;
-}
+} */
 
 @font-face {
   font-family: "Inter";
